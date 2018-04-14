@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.ufazakteam</groupId>
-    <artifactId>comparative-table</artifactId>
+    <artifactId>compadox</artifactId>
     <version>0.1</version>
 
     <properties>
