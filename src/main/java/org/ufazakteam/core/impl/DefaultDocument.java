@@ -1,9 +1,14 @@
 package org.ufazakteam.core.impl;
 
+import org.apache.poi.hwpf.HWPFDocument;
+import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.ufazakteam.core.api.Document;
 import org.ufazakteam.utils.enums.DocumentForm;
 import org.ufazakteam.utils.enums.Lang;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.Date;
 
 /**
@@ -18,6 +23,22 @@ public class DefaultDocument implements Document {
     private Date registrationDate = null;
     private String approvalNumber = "";
     private int registrationNumber = 0;
+
+    private HWPFDocument hwpfDocument = null;
+    private XWPFDocument xwpfDocument = null;
+
+    DefaultDocument(File file, boolean isExtension) {
+        try {
+            if (isExtension) xwpfDocument = new XWPFDocument(new FileInputStream(file));
+            else hwpfDocument = new HWPFDocument(new FileInputStream(file));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void run() {
+
+    }
 
     public String getTitle() {
         return title;
