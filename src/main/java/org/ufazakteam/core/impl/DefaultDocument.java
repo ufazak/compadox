@@ -64,7 +64,7 @@ public class DefaultDocument implements Document {
         else if (getLang() == Lang.KAZ) p = Pattern.compile(StringUtils.METAINFO_IN_KZ);
              if (Objects.nonNull(p)) {
                  Matcher m = p.matcher(mainText);
-                 setTitle(mainText.substring(m.start(), m.end()).trim());
+                 if (m.find()) setTitle(mainText.substring(0, m.start()).trim());
              }
 
     }
