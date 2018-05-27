@@ -32,11 +32,15 @@ public class AppTest {
 		String docxFile = "C:\\Users\\Toktar\\Downloads\\k1500000414.16-04-2018.rus.docx";
 		String kzDocFile = "C:\\Users\\Toktar\\Downloads\\z1700000081.01-03-2018.kaz.doc";
 		String kzDocxFile = "C:\\Users\\Toktar\\Downloads\\z1700000081.01-03-2018.kaz.docx";
-		reader.read(new File(kzDocFile));
+		reader.read(new File(docxFile));
 
 		Document doc = reader.getDocument();
 
-		System.out.println("Lang: " + doc.getLang() + "\nTitle: " + doc.getTitle());
+		System.out.println("Lang: " + doc.getLang() +
+				"\nTitle: " + doc.getTitle() +
+				"\nDocument form: " + doc.getDocumentForm() +
+				"\nApproval date: " + doc.getApprovalDate() +
+				"\n№ " + doc.getApprovalNumber());
 	}
 
 }

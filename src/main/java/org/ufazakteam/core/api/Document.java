@@ -9,7 +9,7 @@ import java.util.Date;
  * Created by Toktar on 14.04.2018.
  */
 public interface Document {
-    void run();
+    void init();
 
     public Lang getLang();
 

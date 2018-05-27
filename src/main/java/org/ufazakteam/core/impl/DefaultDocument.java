@@ -6,6 +6,7 @@ import org.ufazakteam.utils.enums.DocumentForm;
 import org.ufazakteam.utils.enums.Lang;
 
 import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -19,27 +20,18 @@ public class DefaultDocument implements Document {
     private String title = null;
     private DocumentForm documentForm = null;
     private Date approvalDate = null;
-    private Date registrationDate = null;
+    private Date registrationDate = null; // для приказов
     private String approvalNumber = null;
-    private int registrationNumber = 0;
+    private int registrationNumber = 0; // для приказов
 
     private String mainText = null;
+    private String metaInfo = null;
 
     public DefaultDocument(String text) {
         mainText = text;
     }
 
-    public void run() {
-        setLang();
-        setTitle();
-        setDocumentForm();
-    }
-
-    public Lang getLang() {
-        return lang;
-    }
-
-    private void setLang() {
+    public void init() {
         Pattern p = Pattern.compile(StringUtils.METAINFO_IN_RU);
         Matcher m = p.matcher(mainText);
         if (m.find()) setLang(Lang.RUS);
@@ -48,6 +40,15 @@ public class DefaultDocument implements Document {
             m = p.matcher(mainText);
             if (m.find()) setLang(Lang.KAZ);
         }
+        metaInfo = mainText.substring(m.start(), m.end()).toLowerCase();
+        setTitle(mainText.substring(0, m.start()).trim());
+        setDocumentForm();
+        setApprovalDate();
+        setApprovalNumber();
+    }
+
+    public Lang getLang() {
+        return lang;
     }
 
     public void setLang(Lang lang) {
@@ -56,17 +57,6 @@ public class DefaultDocument implements Document {
 
     public String getTitle() {
         return title;
-    }
-
-    private void setTitle() {
-        Pattern p = null;
-             if (getLang() == Lang.RUS) p = Pattern.compile(StringUtils.METAINFO_IN_RU);
-        else if (getLang() == Lang.KAZ) p = Pattern.compile(StringUtils.METAINFO_IN_KZ);
-             if (Objects.nonNull(p)) {
-                 Matcher m = p.matcher(mainText);
-                 if (m.find()) setTitle(mainText.substring(0, m.start()).trim());
-             }
-
     }
 
     public void setTitle(String title) {
@@ -78,7 +68,13 @@ public class DefaultDocument implements Document {
     }
 
     private void setDocumentForm() {
-
+        if (getLang() == Lang.RUS) {
+            if (metaInfo.contains("закон")) setDocumentForm(DocumentForm.LAW);
+            else if (metaInfo.contains("кодекс")) setDocumentForm(DocumentForm.CODE);
+        } else if (getLang() == Lang.KAZ) {
+            if (metaInfo.contains("заң")) setDocumentForm(DocumentForm.LAW);
+            else if (metaInfo.contains("кодекс")) setDocumentForm(DocumentForm.CODE);
+        }
     }
 
     public void setDocumentForm(DocumentForm documentForm) {
@@ -87,6 +83,61 @@ public class DefaultDocument implements Document {
 
     public Date getApprovalDate() {
         return approvalDate;
+    }
+
+    private void setApprovalDate() {
+        Pattern p; Matcher m;
+        if (getLang() == Lang.RUS) {
+            p = Pattern.compile("[0-3]?\\d .{2,7}[ая]{1} \\d\\d\\d\\d");
+            m = p.matcher(metaInfo);
+            if (m.find()) {
+                String[] substr = m.group().split("\\s");
+                int year, month, day;
+                day = substr[0].charAt(0) == '0' ? Character.getNumericValue(substr[0].charAt(1)) : Integer.parseInt(substr[0]);
+                switch (substr[1]) {
+                    case "января"   : month = 0;  break;
+                    case "февраля"  : month = 1;  break;
+                    case "марта"    : month = 2;  break;
+                    case "апреля"   : month = 3;  break;
+                    case "мая"      : month = 4;  break;
+                    case "июня"     : month = 5;  break;
+                    case "июля"     : month = 6;  break;
+                    case "августа"  : month = 7;  break;
+                    case "сентября" : month = 8;  break;
+                    case "октября"  : month = 9;  break;
+                    case "ноября"   : month = 10; break;
+                    case "декабря"  : month = 11; break;
+                    default: month = -1;
+                }
+                year = Integer.parseInt(substr[2]);
+                setApprovalDate(new GregorianCalendar(year, month, day).getTime());
+            }
+        } else if (getLang() == Lang.KAZ) {
+            p = Pattern.compile("\\d\\d\\d\\d жылғы [0-3]?\\d .{5,9}(дағы|дегі)");
+            m = p.matcher(metaInfo);
+            if (m.find()) {
+                String[] substr = m.group().split("\\s");
+                int year, month, day;
+                day = substr[2].charAt(0) == '0' ? Character.getNumericValue(substr[2].charAt(1)) : Integer.parseInt(substr[2]);
+                switch (substr[3]) {
+                    case "қаңтардағы"    : month = 0;  break;
+                    case "ақпандағы"     : month = 1;  break;
+                    case "наурыздағы"    : month = 2;  break;
+                    case "сәуірдегі"     : month = 3;  break;
+                    case "мамырдағы"     : month = 4;  break;
+                    case "маусымдағы"    : month = 5;  break;
+                    case "шілдедегі"     : month = 6;  break;
+                    case "тамыздағы"     : month = 7;  break;
+                    case "қыркүйектегі"  : month = 8;  break;
+                    case "қазандағы"     : month = 9;  break;
+                    case "қарашадағы"    : month = 10; break;
+                    case "желтоқсандағы" : month = 11; break;
+                    default: month = -1;
+                }
+                year = Integer.parseInt(substr[0]);
+                setApprovalDate(new GregorianCalendar(year, month, day).getTime());
+            }
+        }
     }
 
     public void setApprovalDate(Date approvalDate) {
@@ -103,6 +154,26 @@ public class DefaultDocument implements Document {
 
     public String getApprovalNumber() {
         return approvalNumber;
+    }
+
+    private void setApprovalNumber() {
+        Pattern p; Matcher m; String result = null;
+        if (getLang() == Lang.RUS) {
+            p = Pattern.compile("[N№] \\d+(-\\w+ ЗРК|-\\w+)?\\.", Pattern.CASE_INSENSITIVE);
+            m = p.matcher(metaInfo);
+            if (m.find()) { // TODO fix search by pattern
+                String[] substr = m.group().split("\\s");
+                result = (substr.length == 2) ? substr[0].substring(0, substr[0].length() - 1) : substr[2];
+            }
+        } else if (getLang() == Lang.KAZ) {
+            p = Pattern.compile("[N№] \\d+(-.+)?\\s?(Заңы|Кодексі|ҚРЗ)?\\.", Pattern.CASE_INSENSITIVE);
+            m = p.matcher(metaInfo);
+            if (m.find()) {
+                String[] substr = m.group().split("\\s");
+                result = (substr.length == 2) ? substr[1].substring(0, substr[1].length() - 1) : substr[1];
+            }
+        }
+        if (Objects.nonNull(result)) setApprovalNumber(result.toUpperCase());
     }
 
     public void setApprovalNumber(String approvalNumber) {

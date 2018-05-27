@@ -25,7 +25,7 @@ public class DefaultDocumentReader implements DocumentReader {
         document = IOUtils.isDocFile(file)  ? getHWPFDocument(file):
                    IOUtils.isDocxFile(file) ? getXWPFDocument(file): null;
 
-        if (Objects.nonNull(document)) document.run();
+        if (Objects.nonNull(document)) document.init();
     }
 
     private Document getHWPFDocument(File file) {
