@@ -1,63 +1,84 @@
 package org.ufazakteam.core.impl;
 
-import org.apache.poi.hwpf.HWPFDocument;
-import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.ufazakteam.core.api.Document;
+import org.ufazakteam.utils.StringUtils;
 import org.ufazakteam.utils.enums.DocumentForm;
 import org.ufazakteam.utils.enums.Lang;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
 import java.util.Date;
+import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Created by Toktar on 14.04.2018.
  */
 public class DefaultDocument implements Document {
 
-    private String title = "";
     private Lang lang = null;
+    private String title = null;
     private DocumentForm documentForm = null;
     private Date approvalDate = null;
     private Date registrationDate = null;
-    private String approvalNumber = "";
+    private String approvalNumber = null;
     private int registrationNumber = 0;
 
-    private HWPFDocument hwpfDocument = null;
-    private XWPFDocument xwpfDocument = null;
+    private String mainText = null;
 
-    DefaultDocument(File file, boolean isExtension) {
-        try {
-            if (isExtension) xwpfDocument = new XWPFDocument(new FileInputStream(file));
-            else hwpfDocument = new HWPFDocument(new FileInputStream(file));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+    public DefaultDocument(String text) {
+        mainText = text;
     }
 
     public void run() {
-
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public void setTitle(String title) {
-        this.title = title;
+        setLang();
+        setTitle();
+        setDocumentForm();
     }
 
     public Lang getLang() {
         return lang;
     }
 
+    private void setLang() {
+        Pattern p = Pattern.compile(StringUtils.METAINFO_IN_RU);
+        Matcher m = p.matcher(mainText);
+        if (m.find()) setLang(Lang.RUS);
+        else {
+            p = Pattern.compile(StringUtils.METAINFO_IN_KZ);
+            m = p.matcher(mainText);
+            if (m.find()) setLang(Lang.KAZ);
+        }
+    }
+
     public void setLang(Lang lang) {
         this.lang = lang;
     }
 
+    public String getTitle() {
+        return title;
+    }
+
+    private void setTitle() {
+        Pattern p = null;
+             if (getLang() == Lang.RUS) p = Pattern.compile(StringUtils.METAINFO_IN_RU);
+        else if (getLang() == Lang.KAZ) p = Pattern.compile(StringUtils.METAINFO_IN_KZ);
+             if (Objects.nonNull(p)) {
+                 Matcher m = p.matcher(mainText);
+                 setTitle(mainText.substring(m.start(), m.end()).trim());
+             }
+
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
     public DocumentForm getDocumentForm() {
         return documentForm;
+    }
+
+    private void setDocumentForm() {
+
     }
 
     public void setDocumentForm(DocumentForm documentForm) {
