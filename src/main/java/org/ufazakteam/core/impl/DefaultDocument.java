@@ -40,7 +40,7 @@ public class DefaultDocument implements Document {
             m = p.matcher(mainText);
             if (m.find()) setLang(Lang.KAZ);
         }
-        metaInfo = mainText.substring(m.start(), m.end()).toLowerCase();
+        metaInfo = mainText.substring(m.start(), m.end());
         setTitle(mainText.substring(0, m.start()).trim());
         setDocumentForm();
         setApprovalDate();
@@ -69,11 +69,11 @@ public class DefaultDocument implements Document {
 
     private void setDocumentForm() {
         if (getLang() == Lang.RUS) {
-            if (metaInfo.contains("закон")) setDocumentForm(DocumentForm.LAW);
-            else if (metaInfo.contains("кодекс")) setDocumentForm(DocumentForm.CODE);
+            if (metaInfo.contains("Закон")) setDocumentForm(DocumentForm.LAW);
+            else if (metaInfo.contains("Кодекс")) setDocumentForm(DocumentForm.CODE);
         } else if (getLang() == Lang.KAZ) {
-            if (metaInfo.contains("заң")) setDocumentForm(DocumentForm.LAW);
-            else if (metaInfo.contains("кодекс")) setDocumentForm(DocumentForm.CODE);
+            if (metaInfo.contains("Заң")) setDocumentForm(DocumentForm.LAW);
+            else if (metaInfo.contains("Кодекс")) setDocumentForm(DocumentForm.CODE);
         }
     }
 
@@ -159,21 +159,21 @@ public class DefaultDocument implements Document {
     private void setApprovalNumber() {
         Pattern p; Matcher m; String result = null;
         if (getLang() == Lang.RUS) {
-            p = Pattern.compile("[N№] \\d+(-\\w+ ЗРК|-\\w+)?\\.", Pattern.CASE_INSENSITIVE);
+            p = Pattern.compile("[N№] \\d+(-[\\w-І]+ ЗРК|-[\\w-І]+)?\\.");
             m = p.matcher(metaInfo);
-            if (m.find()) { // TODO fix search by pattern
+            if (m.find()) {
                 String[] substr = m.group().split("\\s");
-                result = (substr.length == 2) ? substr[0].substring(0, substr[0].length() - 1) : substr[2];
+                result = (substr.length == 2) ? substr[1].substring(0, substr[1].length() - 1) : substr[1];
             }
         } else if (getLang() == Lang.KAZ) {
-            p = Pattern.compile("[N№] \\d+(-.+)?\\s?(Заңы|Кодексі|ҚРЗ)?\\.", Pattern.CASE_INSENSITIVE);
+            p = Pattern.compile("[N№] \\d+(-[\\w-І]+)?\\s?(Заңы|Кодексі|ҚРЗ)?\\.");
             m = p.matcher(metaInfo);
             if (m.find()) {
                 String[] substr = m.group().split("\\s");
                 result = (substr.length == 2) ? substr[1].substring(0, substr[1].length() - 1) : substr[1];
             }
         }
-        if (Objects.nonNull(result)) setApprovalNumber(result.toUpperCase());
+        if (Objects.nonNull(result)) setApprovalNumber(result);
     }
 
     public void setApprovalNumber(String approvalNumber) {
