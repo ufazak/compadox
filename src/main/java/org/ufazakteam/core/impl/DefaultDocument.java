@@ -1,6 +1,8 @@
 package org.ufazakteam.core.impl;
 
+import org.ufazakteam.core.api.BaseElement;
 import org.ufazakteam.core.api.Document;
+import org.ufazakteam.core.impl.structure.DocumentTree;
 import org.ufazakteam.utils.StringUtils;
 import org.ufazakteam.utils.enums.DocumentForm;
 import org.ufazakteam.utils.enums.Lang;
@@ -16,32 +18,36 @@ import java.util.regex.Pattern;
  */
 public class DefaultDocument implements Document {
 
-    private Lang lang = null;
-    private String title = null;
-    private DocumentForm documentForm = null;
-    private Date approvalDate = null;
-    private Date registrationDate = null; // для приказов
-    private String approvalNumber = null;
-    private int registrationNumber = 0; // для приказов
+    private Lang lang;
+    private String title;
+    private DocumentForm documentForm;
+    private Date approvalDate;
+    private Date registrationDate;
+    private String approvalNumber;
+    private int registrationNumber;
 
-    private String mainText = null;
-    private String metaInfo = null;
+    private BaseElement documentTree;
+
+    private String mainText;
+    private String description;
 
     public DefaultDocument(String text) {
         mainText = text;
     }
 
     public void init() {
-        Pattern p = Pattern.compile(StringUtils.METAINFO_IN_RU);
-        Matcher m = p.matcher(mainText);
-        if (m.find()) setLang(Lang.RUS);
-        else {
-            p = Pattern.compile(StringUtils.METAINFO_IN_KZ);
-            m = p.matcher(mainText);
-            if (m.find()) setLang(Lang.KAZ);
-        }
-        metaInfo = mainText.substring(m.start(), m.end());
-        setTitle(mainText.substring(0, m.start()).trim());
+        describeYourself();
+        createDocumentTree();
+    }
+
+    private void createDocumentTree() {
+        documentTree = new DocumentTree();
+    }
+
+    private void describeYourself() {
+        setLang();
+        setTitle();
+        setDescription();
         setDocumentForm();
         setApprovalDate();
         setApprovalNumber();
@@ -51,12 +57,60 @@ public class DefaultDocument implements Document {
         return lang;
     }
 
+    // TODO: сменить логику при добавлении иных форм актов, кроме закона и кодекса
+    private void setLang() {
+        Pattern p = Pattern.compile(StringUtils.DESC_RU);
+        Matcher m = p.matcher(mainText);
+        if (m.find())
+            setLang(Lang.RUS);
+        else {
+            p = Pattern.compile(StringUtils.DESC_KZ);
+            m = p.matcher(mainText);
+            if (m.find())
+                setLang(Lang.KAZ);
+        }
+    }
+
     public void setLang(Lang lang) {
         this.lang = lang;
     }
 
+    public String getDescription() {
+        return description;
+    }
+
+    private void setDescription() {
+        Pattern p = null;
+        if (getLang() == Lang.RUS)
+            p = Pattern.compile(StringUtils.DESC_RU);
+        else if (getLang() == Lang.KAZ)
+            p = Pattern.compile(StringUtils.DESC_KZ);
+        if (Objects.nonNull(p)) {
+            Matcher m = p.matcher(mainText);
+            if (m.find())
+                setDescription(mainText.substring(m.start(), m.end()));
+        }
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
     public String getTitle() {
         return title;
+    }
+
+    private void setTitle() {
+        Pattern p = null;
+        if (getLang() == Lang.RUS)
+            p = Pattern.compile(StringUtils.DESC_RU);
+        else if (getLang() == Lang.KAZ)
+            p = Pattern.compile(StringUtils.DESC_KZ);
+        if (Objects.nonNull(p)) {
+            Matcher m = p.matcher(mainText);
+            if (m.find())
+                setTitle(mainText.substring(0, m.start()).trim());
+        }
     }
 
     public void setTitle(String title) {
@@ -69,11 +123,15 @@ public class DefaultDocument implements Document {
 
     private void setDocumentForm() {
         if (getLang() == Lang.RUS) {
-            if (metaInfo.contains("Закон")) setDocumentForm(DocumentForm.LAW);
-            else if (metaInfo.contains("Кодекс")) setDocumentForm(DocumentForm.CODE);
+            if (getDescription().contains("Закон"))
+                setDocumentForm(DocumentForm.LAW);
+            else if (getDescription().contains("Кодекс"))
+                setDocumentForm(DocumentForm.CODE);
         } else if (getLang() == Lang.KAZ) {
-            if (metaInfo.contains("Заң")) setDocumentForm(DocumentForm.LAW);
-            else if (metaInfo.contains("Кодекс")) setDocumentForm(DocumentForm.CODE);
+            if (getDescription().contains("Заң"))
+                setDocumentForm(DocumentForm.LAW);
+            else if (getDescription().contains("Кодекс"))
+                setDocumentForm(DocumentForm.CODE);
         }
     }
 
@@ -89,7 +147,7 @@ public class DefaultDocument implements Document {
         Pattern p; Matcher m;
         if (getLang() == Lang.RUS) {
             p = Pattern.compile("[0-3]?\\d .{2,7}[ая]{1} \\d\\d\\d\\d");
-            m = p.matcher(metaInfo);
+            m = p.matcher(getDescription());
             if (m.find()) {
                 String[] substr = m.group().split("\\s");
                 int year, month, day;
@@ -114,7 +172,7 @@ public class DefaultDocument implements Document {
             }
         } else if (getLang() == Lang.KAZ) {
             p = Pattern.compile("\\d\\d\\d\\d жылғы [0-3]?\\d .{5,9}(дағы|дегі)");
-            m = p.matcher(metaInfo);
+            m = p.matcher(getDescription());
             if (m.find()) {
                 String[] substr = m.group().split("\\s");
                 int year, month, day;
@@ -160,14 +218,14 @@ public class DefaultDocument implements Document {
         Pattern p; Matcher m; String result = null;
         if (getLang() == Lang.RUS) {
             p = Pattern.compile("[N№] \\d+(-[\\w-І]+ ЗРК|-[\\w-І]+)?\\.");
-            m = p.matcher(metaInfo);
+            m = p.matcher(getDescription());
             if (m.find()) {
                 String[] substr = m.group().split("\\s");
                 result = (substr.length == 2) ? substr[1].substring(0, substr[1].length() - 1) : substr[1];
             }
         } else if (getLang() == Lang.KAZ) {
             p = Pattern.compile("[N№] \\d+(-[\\w-І]+)?\\s?(Заңы|Кодексі|ҚРЗ)?\\.");
-            m = p.matcher(metaInfo);
+            m = p.matcher(getDescription());
             if (m.find()) {
                 String[] substr = m.group().split("\\s");
                 result = (substr.length == 2) ? substr[1].substring(0, substr[1].length() - 1) : substr[1];

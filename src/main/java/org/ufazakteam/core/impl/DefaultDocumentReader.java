@@ -22,34 +22,28 @@ public class DefaultDocumentReader implements DocumentReader {
 
     @Override
     public void read(File file) {
-        document = IOUtils.isDocFile(file)  ? getHWPFDocument(file):
-                   IOUtils.isDocxFile(file) ? getXWPFDocument(file): null;
-
+        document = createDocument(file);
         if (Objects.nonNull(document)) document.init();
     }
 
-    private Document getHWPFDocument(File file) {
+    private Document createDocument(File file) {
+        Document result = null;
         try {
-            HWPFDocument doc = new HWPFDocument(new FileInputStream(file));
-            WordExtractor extractor = new WordExtractor(doc);
-            return new DefaultDocument(extractor.getText());
+            if (IOUtils.isDocFile(file)) {
+                HWPFDocument doc = new HWPFDocument(new FileInputStream(file));
+                WordExtractor extractor = new WordExtractor(doc);
+                result = new DefaultDocument(extractor.getText());
+            } else if (IOUtils.isDocxFile(file)) {
+                XWPFDocument docx = new XWPFDocument(new FileInputStream(file));
+                List<XWPFParagraph> paragraphs = docx.getParagraphs();
+                StringBuilder builder = new StringBuilder();
+                paragraphs.forEach(p-> builder.append(p.getText()));
+                result = new DefaultDocument(builder.toString());
+            }
         } catch (Exception e) {
             e.printStackTrace();
-            return null;
         }
-    }
-
-    private Document getXWPFDocument(File file) {
-        try {
-            XWPFDocument docx = new XWPFDocument(new FileInputStream(file));
-            List<XWPFParagraph> paragraphs = docx.getParagraphs();
-            StringBuilder builder = new StringBuilder();
-            paragraphs.forEach(p-> builder.append(p.getText()));
-            return new DefaultDocument(builder.toString());
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
+        return result;
     }
 
     public Document getDocument() {

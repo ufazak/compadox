@@ -9,11 +9,16 @@ import java.util.Date;
  * Created by Toktar on 14.04.2018.
  */
 public interface Document {
+
     void init();
 
     public Lang getLang();
 
     public void setLang(Lang lang);
+
+    public String getDescription();
+
+    public void setDescription(String description);
 
     public String getTitle();
 
